@@ -298,6 +298,36 @@
     font-size:13px;
     padding:20px 0;
   }
+  #updatePanel{
+    max-width:520px;
+    margin:0 auto;
+    padding:0 16px;
+    display:none;
+  }
+  #updatePanel.show{display:block;}
+  .upd-filters{display:flex; gap:10px; margin-bottom:16px;}
+  .upd-filters .field{flex:1; margin-bottom:0;}
+  .upd-edit{
+    display:none;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--line);
+  }
+  .upd-edit > *{margin-bottom:10px;}
+  .upd-edit > *:last-child{margin-bottom:0;}
+  .upd-card.open .upd-edit{display:block;}
+  .upd-actions{display:flex; gap:8px; margin-top:10px;}
+  .btn-venda, .btn-toggle{
+    flex:1;
+    border-radius:9px;
+    padding:10px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-venda{background:var(--ok); color:#fff; border:none;}
+  .btn-venda:active{background:#255a41;}
+  .btn-toggle{background:#fff; border:1.5px solid var(--line); color:var(--ink);}
 </style>
 </head>
 <body>
@@ -410,6 +440,37 @@
 
   <div id="panel"></div>
 
+  <div class="respbtn">
+    <button id="toggleUpdate">Atualizar atendimento existente ▾</button>
+  </div>
+
+  <div id="updatePanel">
+    <div class="panel-note">Filtre por loja (e opcionalmente vendedor) para achar o cliente e atualizar o status.</div>
+    <div class="upd-filters">
+      <div class="field">
+        <label>Loja</label>
+        <select id="updLoja">
+          <option value="" disabled selected>Selecione a loja</option>
+          <option>Blumenau</option>
+          <option>Chapecó</option>
+          <option>Concórdia</option>
+          <option>Caçador</option>
+          <option>Joaçaba</option>
+          <option>Canoinhas</option>
+          <option>Rio do Sul</option>
+          <option>São Miguel</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vendedor</label>
+        <select id="updVendedor">
+          <option value="">Todos</option>
+        </select>
+      </div>
+    </div>
+    <div id="updateList"></div>
+  </div>
+
   <div class="toast" id="toast">Atendimento registrado ✓</div>
 
 <script>
@@ -489,6 +550,30 @@
     return phone ? ('tel:'+phone) : ('nome:'+(entry.cliente||'').trim().toLowerCase());
   }
 
+  function esc(s){
+    return (s || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
+
+  function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function groupByCliente(list){
+    const groups = {};
+    list.forEach((r, idx) => {
+      const k = keyFor(r);
+      if(!groups[k]) groups[k] = [];
+      groups[k].push({...r, _idx: idx});
+    });
+    return Object.values(groups).map(touches => {
+      touches.sort((a,b) => a.data.localeCompare(b.data) || a._idx - b._idx);
+      return { touches, last: touches[touches.length - 1], n: touches.length };
+    });
+  }
+
   async function renderPanel(){
     const panel = document.getElementById('panel');
     panel.innerHTML = '<div class="empty">Carregando...</div>';
@@ -497,18 +582,9 @@
       panel.innerHTML = '<div class="empty">Nenhum atendimento registrado ainda.</div>';
       return;
     }
-    const groups = {};
-    list.forEach((r, idx) => {
-      const k = keyFor(r);
-      if(!groups[k]) groups[k] = [];
-      groups[k].push({...r, _idx: idx});
-    });
-    const cards = Object.values(groups).map(touches => {
-      touches.sort((a,b) => a.data.localeCompare(b.data) || a._idx - b._idx);
-      const last = touches[touches.length - 1];
+    const cards = groupByCliente(list).map(({touches, last, n}) => {
       const everSold = touches.some(t => t.status === 'Vendido');
       const everTD = touches.some(t => t.testDrive === 'Sim');
-      const n = touches.length;
       const historyHtml = n > 1 ? `
         <div class="history">
           ${touches.map((t,i) => `
@@ -539,6 +615,140 @@
       ${cards.reverse().join('')}
     `;
   }
+
+  const updLojaSel = document.getElementById('updLoja');
+  const updVendSel = document.getElementById('updVendedor');
+
+  updLojaSel.addEventListener('change', () => {
+    const list = vendedoresPorLoja[updLojaSel.value] || [];
+    const gerente = gerentesPorLoja[updLojaSel.value] || '';
+    updVendSel.innerHTML = '<option value="">Todos</option>' +
+      list.map(v => {
+        const tag = v === gerente ? ' (Gerente)' : '';
+        return `<option value="${v}">${v}${tag}</option>`;
+      }).join('');
+    renderUpdateList();
+  });
+  updVendSel.addEventListener('change', renderUpdateList);
+
+  async function renderUpdateList(){
+    const updateList = document.getElementById('updateList');
+    const loja = updLojaSel.value;
+    if(!loja){
+      updateList.innerHTML = '<div class="empty">Selecione uma loja.</div>';
+      return;
+    }
+    updateList.innerHTML = '<div class="empty">Carregando...</div>';
+    const vendedorFiltro = updVendSel.value;
+    const all = await loadResponses();
+    let entries = groupByCliente(all).filter(g => g.last.loja === loja);
+    if(vendedorFiltro) entries = entries.filter(g => g.last.vendedor === vendedorFiltro);
+    entries.sort((a,b) => b.last.data.localeCompare(a.last.data));
+    if(entries.length === 0){
+      updateList.innerHTML = '<div class="empty">Nenhum cliente encontrado para esse filtro.</div>';
+      return;
+    }
+    updateList.innerHTML = entries.map(({last, n}) => `
+      <div class="group upd-card" data-tel="${esc(last.telefone)}" data-cliente="${esc(last.cliente)}" data-loja="${esc(last.loja)}" data-vendedor="${esc(last.vendedor)}" data-testdrive="${esc(last.testDrive)}">
+        <div class="top">
+          <span class="name">${last.cliente || '(sem nome)'} <span style="font-weight:400;color:var(--muted);">· ${last.vendedor}</span></span>
+          ${n > 1 ? `<span class="touchcount">${n}x</span>` : ''}
+        </div>
+        <div class="meta">Último status: <b>${last.status}</b>${last.carro ? ' · ' + last.carro : ''} · ${fmtDate(last.data)}</div>
+        <div class="upd-actions">
+          <button type="button" class="btn-venda">✓ Registrar Venda</button>
+          <button type="button" class="btn-toggle">Atualizar status</button>
+        </div>
+        <div class="upd-edit">
+          <div class="statusgrid" data-role="upd-status">
+            <div class="pill${last.status==='Vendido'?' active':''}" data-val="Vendido">Vendido</div>
+            <div class="pill${last.status==='Em negociação'?' active':''}" data-val="Em negociação">Em negociação</div>
+            <div class="pill${last.status==='Aguardando retorno'?' active':''}" data-val="Aguardando retorno">Aguardando retorno</div>
+            <div class="pill${last.status==='Não vendeu'?' active':''}" data-val="Não vendeu">Não vendeu</div>
+          </div>
+          <input type="text" class="upd-carro" value="${esc(last.carro)}" placeholder="Carro de interesse" />
+          <textarea class="upd-obs" placeholder="Observação desta atualização (opcional)"></textarea>
+          <button type="button" class="submit upd-save">Salvar atualização</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function saveCardUpdate(card, status, extraObs){
+    const entry = {
+      loja: card.dataset.loja,
+      vendedor: card.dataset.vendedor,
+      data: new Date().toISOString().slice(0,10),
+      cliente: card.dataset.cliente,
+      telefone: card.dataset.tel,
+      tipo: 'Atualização',
+      carro: (card.querySelector('.upd-carro') || {}).value || '',
+      testDrive: card.dataset.testdrive,
+      status: status,
+      obs: extraObs || '',
+    };
+    await saveEntry(entry);
+  }
+
+  document.getElementById('updateList').addEventListener('click', async (e) => {
+    const pill = e.target.closest('[data-role="upd-status"] .pill');
+    if(pill){
+      pill.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      return;
+    }
+
+    const toggleBtn = e.target.closest('.btn-toggle');
+    if(toggleBtn){
+      const card = toggleBtn.closest('.upd-card');
+      card.classList.toggle('open');
+      toggleBtn.textContent = card.classList.contains('open') ? 'Fechar' : 'Atualizar status';
+      return;
+    }
+
+    const vendaBtn = e.target.closest('.btn-venda');
+    if(vendaBtn){
+      const card = vendaBtn.closest('.upd-card');
+      if(!confirm(`Confirmar venda para ${card.dataset.cliente}?`)) return;
+      vendaBtn.disabled = true;
+      vendaBtn.textContent = 'Salvando...';
+      try{
+        await saveCardUpdate(card, 'Vendido', '');
+        showToast('Venda registrada ✓');
+        await renderUpdateList();
+      }catch(err){
+        alert('Não foi possível registrar agora. Tente novamente.');
+        vendaBtn.disabled = false;
+        vendaBtn.textContent = '✓ Registrar Venda';
+      }
+      return;
+    }
+
+    const saveBtn = e.target.closest('.upd-save');
+    if(saveBtn){
+      const card = saveBtn.closest('.upd-card');
+      const statusPill = card.querySelector('[data-role="upd-status"] .pill.active');
+      if(!statusPill){ alert('Selecione um status.'); return; }
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Salvando...';
+      try{
+        await saveCardUpdate(card, statusPill.dataset.val, (card.querySelector('.upd-obs') || {}).value || '');
+        showToast('Atualização salva ✓');
+        await renderUpdateList();
+      }catch(err){
+        alert('Não foi possível salvar agora. Tente novamente.');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Salvar atualização';
+      }
+    }
+  });
+
+  document.getElementById('toggleUpdate').addEventListener('click', () => {
+    const panel = document.getElementById('updatePanel');
+    const btn = document.getElementById('toggleUpdate');
+    panel.classList.toggle('show');
+    btn.textContent = panel.classList.contains('show') ? 'Ocultar atualização ▴' : 'Atualizar atendimento existente ▾';
+  });
 
   document.getElementById('toggleResp').addEventListener('click', async () => {
     const panel = document.getElementById('panel');
@@ -579,9 +789,7 @@
     btn.textContent = 'Enviando...';
     try{
       await saveEntry(entry);
-      const toast = document.getElementById('toast');
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2200);
+      showToast('Atendimento registrado ✓');
       document.getElementById('atForm').reset();
       vendSel.innerHTML = '<option value="" disabled selected>Selecione a loja primeiro</option>';
       document.getElementById('data').valueAsDate = new Date();
