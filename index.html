@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Registro de Atendimento — Grupo De Marco/Tozzo</title>
+<style>
+  :root{
+    --ink:#1c1d21;
+    --paper:#f4f3f0;
+    --card:#ffffff;
+    --line:#e4e2dc;
+    --accent:#1a1a1a;
+    --accent-soft:#eeece8;
+    --accent-deep:#000000;
+    --muted:#75726c;
+    --ok:#2f6b4f;
+    --ok-soft:#e7f2ec;
+    --warn:#9a7716;
+    --warn-soft:#f8f0dc;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    padding:0 0 64px;
+  }
+  .topband{
+    background:#000000;
+    color:#fff;
+    padding:28px 20px 40px;
+    position:relative;
+    overflow:hidden;
+  }
+  .topband::after{
+    content:"";
+    position:absolute; right:-40px; top:-40px;
+    width:200px; height:200px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.04);
+  }
+  .logo-wrap{
+    margin-bottom:20px;
+  }
+  .logo-wrap img{
+    height:38px;
+    width:auto;
+    display:block;
+    filter:brightness(1);
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    opacity:.55;
+    font-weight:600;
+  }
+  .topband h1{
+    margin:6px 0 4px;
+    font-size:22px;
+    font-weight:700;
+    line-height:1.25;
+    max-width:340px;
+  }
+  .topband p{
+    margin:0;
+    font-size:13.5px;
+    opacity:.75;
+    max-width:340px;
+    line-height:1.4;
+  }
+  .wrap{
+    max-width:520px;
+    margin:-22px auto 0;
+    padding:0 16px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 18px;
+    margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(28,29,33,.04);
+  }
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:block;
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:8px;
+    color:var(--ink);
+  }
+  label .req{color:#c0392b; margin-left:2px;}
+  .hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:5px;
+    line-height:1.45;
+  }
+  select, input[type=text], input[type=tel], input[type=date], textarea{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid var(--line);
+    border-radius:9px;
+    font-size:15px;
+    font-family:inherit;
+    color:var(--ink);
+    background:#fff;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' stroke='%2375726c' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    padding-right:34px;
+  }
+  select:focus, input:focus, textarea:focus{
+    outline:none;
+    border-color:#000;
+    box-shadow:0 0 0 3px rgba(0,0,0,.08);
+  }
+  textarea{resize:vertical; min-height:64px;}
+  .pillrow{display:flex; gap:8px;}
+  .pill{
+    flex:1;
+    text-align:center;
+    padding:11px 8px;
+    border:1.5px solid var(--line);
+    border-radius:9px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--muted);
+    user-select:none;
+    transition:.12s;
+  }
+  .pill.active{
+    border-color:#000;
+    background:#000;
+    color:#fff;
+  }
+  .typegrid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .typegrid .pill, .statusgrid .pill{padding:10px 6px; font-size:13px;}
+  .statusgrid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .gerente-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:600;
+    color:var(--muted);
+    background:#f1efe9;
+    padding:2px 8px;
+    border-radius:99px;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+  .submitbar{
+    max-width:520px;
+    margin:0 auto;
+    padding:4px 16px 0;
+  }
+  button.submit{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:10px;
+    background:#000;
+    color:#fff;
+    font-size:15.5px;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:.01em;
+  }
+  button.submit:active{background:#333;}
+  .footnote{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:10px;
+    padding:0 24px;
+    line-height:1.5;
+  }
+  .toast{
+    position:fixed;
+    left:50%; bottom:24px;
+    transform:translateX(-50%) translateY(120%);
+    background:var(--ok);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    box-shadow:0 6px 20px rgba(0,0,0,.18);
+    transition:transform .25s ease;
+    z-index:10;
+    max-width:88%;
+    text-align:center;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .respbtn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    max-width:520px;
+    margin:16px auto 0;
+    padding:0 16px;
+  }
+  .respbtn button{
+    background:none;
+    border:none;
+    color:#000;
+    font-size:13px;
+    font-weight:600;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:8px;
+  }
+  #panel{
+    max-width:520px;
+    margin:0 auto;
+    padding:0 16px;
+    display:none;
+  }
+  #panel.show{display:block;}
+  .panel-note{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:12px;
+    line-height:1.5;
+  }
+  .group{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    font-size:13px;
+  }
+  .group .top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    font-weight:700;
+    margin-bottom:4px;
+    gap:8px;
+  }
+  .group .top .name{flex:1;}
+  .group .meta{color:var(--muted); margin-bottom:6px;}
+  .touchcount{
+    font-size:11px;
+    font-weight:600;
+    color:var(--muted);
+    background:#f1efe9;
+    padding:2px 8px;
+    border-radius:99px;
+    white-space:nowrap;
+  }
+  .history{
+    border-top:1px dashed var(--line);
+    margin-top:8px;
+    padding-top:8px;
+  }
+  .hrow{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    padding:3px 0;
+    color:var(--muted);
+  }
+  .hrow .st{font-weight:600; color:var(--ink);}
+  .badge{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:99px;
+    margin-left:6px;
+    white-space:nowrap;
+  }
+  .badge.td{background:#eeece8; color:#333;}
+  .badge.venda{background:var(--ok-soft); color:var(--ok);}
+  .badge.andamento{background:var(--warn-soft); color:var(--warn);}
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    padding:20px 0;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topband">
+    <div class="logo-wrap">
+      <img src="demarco.png" alt="Grupo De Marco · Tozzo" />
+    </div>
+    <div class="eyebrow">Rede comercial · Controle de atendimento</div>
+    <h1>Registro de Atendimento</h1>
+    <p>Preencha logo depois de falar com o cliente. Substitui a planilha de fluxo.</p>
+  </div>
+
+  <div class="wrap">
+    <form id="atForm">
+      <div class="card">
+
+        <div class="field">
+          <label>Loja <span class="req">*</span></label>
+          <select id="loja" required>
+            <option value="" disabled selected>Selecione a loja</option>
+            <option>Blumenau</option>
+            <option>Chapecó</option>
+            <option>Concórdia</option>
+            <option>Caçador</option>
+            <option>Joaçaba</option>
+            <option>Canoinhas</option>
+            <option>Rio do Sul</option>
+            <option>São Miguel</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Vendedor <span class="req">*</span></label>
+          <select id="vendedor" required>
+            <option value="" disabled selected>Selecione a loja primeiro</option>
+          </select>
+          <div class="hint">Gerentes aparecem no topo da lista.</div>
+        </div>
+
+        <div class="field">
+          <label>Data do atendimento <span class="req">*</span></label>
+          <input type="date" id="data" required />
+        </div>
+
+        <div class="field">
+          <label>Cliente <span class="req">*</span></label>
+          <input type="text" id="cliente" placeholder="Nome do cliente" required />
+        </div>
+
+        <div class="field">
+          <label>Telefone do cliente</label>
+          <input type="tel" id="telefone" placeholder="(47) 99999-9999" />
+          <div class="hint">Usado para agrupar atendimentos do mesmo cliente entre visitas.</div>
+        </div>
+
+        <div class="field">
+          <label>Tipo de atendimento <span class="req">*</span></label>
+          <div class="typegrid" id="tipoGrid">
+            <div class="pill" data-val="Lead">Lead</div>
+            <div class="pill" data-val="Prospecção">Prospecção</div>
+            <div class="pill" data-val="Fluxo de loja">Fluxo de loja</div>
+            <div class="pill" data-val="Visita externa">Visita externa</div>
+            <div class="pill" data-val="Indicação">Indicação</div>
+            <div class="pill" data-val="WhatsApp">WhatsApp</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Carro de interesse</label>
+          <input type="text" id="carro" placeholder="Ex.: Kardian, Duster, Boreal..." />
+        </div>
+
+        <div class="field">
+          <label>Fez test drive? <span class="req">*</span></label>
+          <div class="pillrow" id="tdRow">
+            <div class="pill" data-val="Sim">Sim</div>
+            <div class="pill" data-val="Não">Não</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Status do atendimento <span class="req">*</span></label>
+          <div class="statusgrid" id="statusGrid">
+            <div class="pill" data-val="Vendido">Vendido</div>
+            <div class="pill" data-val="Em negociação">Em negociação</div>
+            <div class="pill" data-val="Aguardando retorno">Aguardando retorno</div>
+            <div class="pill" data-val="Não vendeu">Não vendeu</div>
+          </div>
+          <div class="hint">Se o cliente já tinha registro anterior e agora fechou, marque <b>Vendido</b> aqui — o sistema agrupa o histórico pelo telefone.</div>
+        </div>
+
+        <div class="field">
+          <label>Observações</label>
+          <textarea id="obs" placeholder="Detalhe livre, se precisar (opcional)"></textarea>
+        </div>
+
+      </div>
+    </form>
+
+    <div class="submitbar">
+      <button class="submit" id="submitBtn">Registrar atendimento</button>
+      <div class="footnote">Cada contato vira uma linha nova. A venda é contabilizada uma vez por cliente, não por visita.</div>
+    </div>
+  </div>
+
+  <div class="respbtn">
+    <button id="toggleResp">Ver respostas registradas ▾</button>
+  </div>
+
+  <div id="panel"></div>
+
+  <div class="toast" id="toast">Atendimento registrado ✓</div>
+
+<script>
+  const vendedoresPorLoja = {
+    "Blumenau": ["Tadeu Zibetti", "Pedro", "Felipe", "Jean", "Sergio", "Alcenio"],
+    "Chapecó": ["Clairton", "Marta", "Josias", "Rogério", "Clebes", "Sandro", "Daiany"],
+    "Concórdia": ["Johnathas", "Anderson", "Marcos"],
+    "Caçador": ["Marco", "Felipe", "Jonas"],
+    "Joaçaba": ["Renato", "Janrie", "Andre", "Gabriella"],
+    "Canoinhas": ["André", "Édson", "Etien", "Maria"],
+    "Rio do Sul": ["Erick", "Charles", "Iago", "Bruno"],
+    "São Miguel": ["Éverton", "Alan", "Fábio"]
+  };
+
+  const gerentesPorLoja = {
+    "Blumenau": "Tadeu Zibetti",
+    "Chapecó": "Clairton",
+    "Concórdia": "Johnathas",
+    "Caçador": "Marco",
+    "Joaçaba": "Renato",
+    "Canoinhas": "André",
+    "Rio do Sul": "Erick",
+    "São Miguel": "Éverton",
+  };
+
+  const lojaSel = document.getElementById('loja');
+  const vendSel = document.getElementById('vendedor');
+  lojaSel.addEventListener('change', () => {
+    const list = vendedoresPorLoja[lojaSel.value] || [];
+    const gerente = gerentesPorLoja[lojaSel.value] || '';
+    vendSel.innerHTML = '<option value="" disabled selected>Selecione o vendedor</option>' +
+      list.map(v => {
+        const tag = v === gerente ? ' (Gerente)' : '';
+        return `<option value="${v}">${v}${tag}</option>`;
+      }).join('') +
+      '<option value="Outro">Outro</option>';
+  });
+
+  document.getElementById('data').valueAsDate = new Date();
+
+  function wirePills(rowId){
+    const row = document.getElementById(rowId);
+    row.querySelectorAll('.pill').forEach(p => {
+      p.addEventListener('click', () => {
+        row.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+      });
+    });
+  }
+  wirePills('tipoGrid');
+  wirePills('tdRow');
+  wirePills('statusGrid');
+
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwzMGDKT-RBnS70ZYkeyM4hBL8LYKuKjpB5TkGT_YRHULP51OV25mM-vSO9_oYBT5zjyQ/exec';
+
+  async function loadResponses(){
+    try{
+      const res = await fetch(SHEET_URL);
+      return await res.json();
+    }catch(e){ return []; }
+  }
+  async function saveEntry(entry){
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(entry)
+    });
+  }
+
+  function fmtDate(iso){
+    const [y,m,d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function keyFor(entry){
+    const phone = (entry.telefone || '').replace(/\D/g,'');
+    return phone ? ('tel:'+phone) : ('nome:'+(entry.cliente||'').trim().toLowerCase());
+  }
+
+  async function renderPanel(){
+    const panel = document.getElementById('panel');
+    panel.innerHTML = '<div class="empty">Carregando...</div>';
+    const list = await loadResponses();
+    if(list.length === 0){
+      panel.innerHTML = '<div class="empty">Nenhum atendimento registrado ainda.</div>';
+      return;
+    }
+    const groups = {};
+    list.forEach((r, idx) => {
+      const k = keyFor(r);
+      if(!groups[k]) groups[k] = [];
+      groups[k].push({...r, _idx: idx});
+    });
+    const cards = Object.values(groups).map(touches => {
+      touches.sort((a,b) => a.data.localeCompare(b.data) || a._idx - b._idx);
+      const last = touches[touches.length - 1];
+      const everSold = touches.some(t => t.status === 'Vendido');
+      const everTD = touches.some(t => t.testDrive === 'Sim');
+      const n = touches.length;
+      const historyHtml = n > 1 ? `
+        <div class="history">
+          ${touches.map((t,i) => `
+            <div class="hrow">
+              <span>${i+1}º — ${fmtDate(t.data)} · ${t.vendedor} · ${t.tipo}</span>
+              <span class="st">${t.status}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+      return `
+        <div class="group">
+          <div class="top">
+            <span class="name">${last.cliente || '(sem nome)'} <span style="font-weight:400;color:var(--muted);">· ${last.loja}</span></span>
+            ${n > 1 ? `<span class="touchcount">${n}x atendido</span>` : ''}
+          </div>
+          <div class="meta">Último status: <b>${last.status}</b>${last.carro ? ' · ' + last.carro : ''}</div>
+          <div>
+            ${everTD ? '<span class="badge td">TEST DRIVE</span>' : ''}
+            ${everSold ? '<span class="badge venda">VENDIDO</span>' : (last.status === 'Em negociação' ? '<span class="badge andamento">EM ANDAMENTO</span>' : '')}
+          </div>
+          ${historyHtml}
+        </div>
+      `;
+    });
+    panel.innerHTML = `
+      <div class="panel-note">Atendimentos do mesmo cliente (mesmo telefone) aparecem agrupados — cada visita conta, a venda contabiliza uma vez.</div>
+      ${cards.reverse().join('')}
+    `;
+  }
+
+  document.getElementById('toggleResp').addEventListener('click', async () => {
+    const panel = document.getElementById('panel');
+    const btn = document.getElementById('toggleResp');
+    panel.classList.toggle('show');
+    if(panel.classList.contains('show')){
+      btn.textContent = 'Ocultar respostas ▴';
+      await renderPanel();
+    } else {
+      btn.textContent = 'Ver respostas registradas ▾';
+    }
+  });
+
+  document.getElementById('submitBtn').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const loja = document.getElementById('loja').value;
+    const vendedor = document.getElementById('vendedor').value;
+    const data = document.getElementById('data').value;
+    const cliente = document.getElementById('cliente').value;
+    const tipo = document.querySelector('#tipoGrid .pill.active');
+    const td = document.querySelector('#tdRow .pill.active');
+    const status = document.querySelector('#statusGrid .pill.active');
+    if(!loja || !vendedor || !data || !cliente || !tipo || !td || !status){
+      alert('Preencha todos os campos obrigatórios (*).');
+      return;
+    }
+    const entry = {
+      loja, vendedor, data, cliente,
+      telefone: document.getElementById('telefone').value,
+      tipo: tipo.dataset.val,
+      carro: document.getElementById('carro').value,
+      testDrive: td.dataset.val,
+      status: status.dataset.val,
+      obs: document.getElementById('obs').value,
+    };
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    try{
+      await saveEntry(entry);
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+      document.getElementById('atForm').reset();
+      vendSel.innerHTML = '<option value="" disabled selected>Selecione a loja primeiro</option>';
+      document.getElementById('data').valueAsDate = new Date();
+      document.querySelectorAll('.pill.active').forEach(p => p.classList.remove('active'));
+      const panel = document.getElementById('panel');
+      if(panel.classList.contains('show')) await renderPanel();
+    }catch(err){
+      alert('Não foi possível registrar agora. Verifique a conexão e tente novamente.');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Registrar atendimento';
+    }
+  });
+</script>
+
+</body>
+</html>
