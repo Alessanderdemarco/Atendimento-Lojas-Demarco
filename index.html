@@ -527,10 +527,16 @@
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwzMGDKT-RBnS70ZYkeyM4hBL8LYKuKjpB5TkGT_YRHULP51OV25mM-vSO9_oYBT5zjyQ/exec';
 
   async function loadResponses(){
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try{
-      const res = await fetch(SHEET_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      const res = await fetch(SHEET_URL + '?t=' + Date.now(), { cache: 'no-store', signal: controller.signal });
       return await res.json();
-    }catch(e){ return []; }
+    }catch(e){
+      throw new Error('timeout');
+    }finally{
+      clearTimeout(timeout);
+    }
   }
   async function saveEntry(entry){
     await fetch(SHEET_URL, {
@@ -577,7 +583,14 @@
   async function renderPanel(){
     const panel = document.getElementById('panel');
     panel.innerHTML = '<div class="empty">Carregando...</div>';
-    const list = await loadResponses();
+    let list;
+    try{
+      list = await loadResponses();
+    }catch(e){
+      panel.innerHTML = '<div class="empty">Demorou demais pra carregar. <a href="#" id="retryPanel">Tentar de novo</a></div>';
+      document.getElementById('retryPanel').addEventListener('click', (ev) => { ev.preventDefault(); renderPanel(); });
+      return;
+    }
     if(list.length === 0){
       panel.innerHTML = '<div class="empty">Nenhum atendimento registrado ainda.</div>';
       return;
@@ -640,7 +653,14 @@
     }
     updateList.innerHTML = '<div class="empty">Carregando...</div>';
     const vendedorFiltro = updVendSel.value;
-    const all = await loadResponses();
+    let all;
+    try{
+      all = await loadResponses();
+    }catch(e){
+      updateList.innerHTML = '<div class="empty">Demorou demais pra carregar. <a href="#" id="retryUpdate">Tentar de novo</a></div>';
+      document.getElementById('retryUpdate').addEventListener('click', (ev) => { ev.preventDefault(); renderUpdateList(); });
+      return;
+    }
     let entries = groupByCliente(all).filter(g => g.last.loja === loja);
     if(vendedorFiltro) entries = entries.filter(g => g.last.vendedor === vendedorFiltro);
     entries.sort((a,b) => b.last.data.localeCompare(a.last.data));
